@@ -1,0 +1,10 @@
+main: com.bringholm.naturalsignshop.NaturalSignShop
+name: NaturalSignShop
+version: 1.0-SNAPSHOT
+author: AlvinB
+softdepend: [Vault]
+commands:
+  naturalsignshop:
+    aliases: [naturalsshop, nss]
+    description: /naturalsignshop reload - reloads the configuration files
+    usage: /naturalsignshop reload

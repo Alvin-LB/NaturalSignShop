@@ -1,0 +1,6 @@
+# Configuration file for NaturalSignShop
+
+# Whether or not the plugin should link stocks of signs with the same type, amount, buy price and sell price
+# If this is enabled, this means that an item that has been sold to sign A could be bough from sign B aswell, so long as
+# they are configured the same.
+link-same-option-signs: true
