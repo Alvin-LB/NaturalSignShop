@@ -2,13 +2,16 @@ package com.bringholm.naturalsignshop.type;
 
 import com.bringholm.naturalsignshop.bukkitutils.ReflectUtil;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import org.bukkit.Material;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.util.EnumSet;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * This is an attempt at getting both the localized names (IE 'Block of Iron') and the string IDs (IE 'iron_block')
@@ -21,6 +24,9 @@ public class ItemNameUtils {
     private static final Map<String, ItemType> LOCALIZED_NAME_TO_ITEM_TYPE = Maps.newHashMap();
 
     private static boolean reflectionFailed = false;
+
+    // These are all Materials (for the hasNonEqualMaterial method) which do contain conflicting translations, but don't actually conflict in game.
+    private static final EnumSet<Material> IGNORED_MATERIALS = EnumSet.of(Material.COOKED_FISH, Material.RAW_FISH, Material.LOG, Material.LOG_2, Material.LEAVES, Material.LEAVES_2);
 
     static {
         try {
@@ -40,6 +46,7 @@ public class ItemNameUtils {
             Method getKeyMethod = ReflectUtil.getMethod(minecraftKeyClass, "getKey").getOrThrow();
             Constructor<?> itemStackConstructor = ReflectUtil.getConstructor(itemStackClass, itemClass, int.class, int.class).getOrThrow();
 
+            Set<String> ambiguousLocalizedNames = Sets.newHashSet();
             for (Material material : Material.values()) {
                 Object item = ReflectUtil.invokeMethod(null, getItemMethod, material).getOrThrow();
                 if (item == null) {
@@ -57,10 +64,28 @@ public class ItemNameUtils {
                     for (int i = 0; i < 16; i++) {
                         String localizedName = (String) ReflectUtil.invokeMethod(item, getLocalizedNameMethod,
                                 ReflectUtil.invokeConstructor(itemStackConstructor, item, 1, i).getOrThrow()).getOrThrow();
-                        if (localizedName != null && !ITEM_TYPE_TO_LOCALIZED_NAME.containsValue(localizedName)) {
+                        if (localizedName != null) {
                             ItemType itemType = new ItemType(material, (short) i);
-                            ITEM_TYPE_TO_LOCALIZED_NAME.put(itemType, localizedName);
-                            LOCALIZED_NAME_TO_ITEM_TYPE.put(localizedName.toLowerCase().replace(" ", ""), itemType);
+                            String replacedName = localizedName.toLowerCase().replaceAll("\\W", "");
+                            if (ITEM_TYPE_TO_LOCALIZED_NAME.containsValue(localizedName)) {
+                                // Just ignore it if the Material is the same
+                                if (hasNonEqualMaterial(ITEM_TYPE_TO_LOCALIZED_NAME, localizedName, material)) {
+                                    ITEM_TYPE_TO_LOCALIZED_NAME.put(itemType, localizedName);
+                                    // We can't allow for ambiguous names. It is better to just let the String IDs
+                                    // be used, since they are guaranteed to be unique.
+                                    if (!ambiguousLocalizedNames.contains(localizedName)) {
+                                        ambiguousLocalizedNames.add(localizedName);
+                                    }
+                                    if (LOCALIZED_NAME_TO_ITEM_TYPE.containsKey(replacedName)) {
+                                        LOCALIZED_NAME_TO_ITEM_TYPE.remove(replacedName);
+                                    }
+                                }
+                            } else {
+                                ITEM_TYPE_TO_LOCALIZED_NAME.put(itemType, localizedName);
+                                if (!ambiguousLocalizedNames.contains(localizedName)) {
+                                    LOCALIZED_NAME_TO_ITEM_TYPE.put(replacedName, itemType);
+                                }
+                            }
                         }
                     }
                 }
@@ -70,6 +95,17 @@ public class ItemNameUtils {
             reflectionFailed = true;
             throw e;
         }
+    }
+
+    private static boolean hasNonEqualMaterial(Map<ItemType, String> map, String value, Material material) {
+        for (Map.Entry<ItemType, String> entry : map.entrySet()) {
+            if (entry.getValue().equals(value)) {
+                if (entry.getKey().getMaterial() != material && !IGNORED_MATERIALS.contains(material) && !IGNORED_MATERIALS.contains(entry.getKey().getMaterial())) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     public static void init() {
@@ -93,13 +129,13 @@ public class ItemNameUtils {
         if (reflectionFailed) {
             return new ItemType(Material.matchMaterial(string), damage);
         }
-        ItemType itemType = LOCALIZED_NAME_TO_ITEM_TYPE.get(string.toLowerCase().replaceAll("(\\W| )", ""));
+        ItemType itemType = LOCALIZED_NAME_TO_ITEM_TYPE.get(string.toLowerCase().replaceAll("\\W", ""));
         if (itemType != null) {
             return itemType;
         }
         Material material = Material.matchMaterial(string);
         if (material == null) {
-            material = NAME_TO_MATERIAL.get(string.toLowerCase().replaceAll("(\\W| )", ""));
+            material = NAME_TO_MATERIAL.get(string.toLowerCase().replaceAll("\\W", ""));
         }
         if (material != null) {
             return new ItemType(material, damage);

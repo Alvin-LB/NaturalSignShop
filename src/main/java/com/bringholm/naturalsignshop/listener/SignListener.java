@@ -197,7 +197,7 @@ public class SignListener implements Listener {
                                     return;
                                 }
                                 if (properties.getSellPrice() == -1) {
-                                    e.getPlayer().sendMessage(ChatColor.RED + "You cannot sell items to this sign!");
+                                    e.getPlayer().sendMessage(addPrefix(ChatColor.RED + "You cannot sell items to this sign!"));
                                     return;
                                 }
                                 if (e.getPlayer().isSneaking()) {
@@ -207,7 +207,7 @@ public class SignListener implements Listener {
                                 }
                             } else {
                                 if (!e.getPlayer().hasPermission(Permissions.BUY_PERMISSION)) {
-                                    e.getPlayer().sendMessage(ChatColor.RED + "You don't have permission to do this!");
+                                    e.getPlayer().sendMessage(addPrefix(ChatColor.RED + "You don't have permission to do this!"));
                                     return;
                                 }
                                 if (e.getPlayer().isSneaking()) {
@@ -235,7 +235,7 @@ public class SignListener implements Listener {
                             }
                             String[] strings = new String[2];
                             strings[0] = properties.getSellType().getDisplayName();
-                            strings[1] = "Amount: " + properties.getAmount() + " Buy Price: " + formatDouble(properties.getBuyPrice()) + " Sell Price: " + formatDouble(properties.getSellPrice());
+                            strings[1] = "Amount: " + properties.getAmount() + " Buy Price: " + formatDouble(properties.getBuyPrice()) + (properties.getSellPrice() != -1 ? " Sell Price: " + formatDouble(properties.getSellPrice()) : "");
                             new Scroller.SignScroller(plugin, sign, e.getPlayer(), new int[] {1, 2}, strings, 3);
                         }
                     }
