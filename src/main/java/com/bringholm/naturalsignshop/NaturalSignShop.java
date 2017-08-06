@@ -86,7 +86,7 @@ public class NaturalSignShop extends JavaPlugin {
         linkSameOptionSigns = getConfig().getBoolean("link-same-option-signs");
         linkedStock.clear();
         // This is kind of a bad system, but YAML does not allow for serialization of Maps with anything other than Strings as keys.
-        // Of course, a string parser for keys could be implemented, but that is probably worse.
+        // Of course, a string parser for keys could be implemented, but that would probably be worse.
         ConfigurationHandler configurationHandler = new ConfigurationHandler("data/linked-sign-stock.yml", this);
         for (String string : configurationHandler.getConfig().getKeys(false)) {
             linkedStock.put((SignShopProperties) configurationHandler.getConfig().get(string + ".properties"), configurationHandler.getConfig().getInt(string + ".amount"));
@@ -94,8 +94,7 @@ public class NaturalSignShop extends JavaPlugin {
     }
 
     private void saveConfigValues() {
-        // What this is doesn't really matter, just that it's unique.
-        int index = 0;
+        int index = 0; // What this is doesn't really matter, just that it's unique for each entry.
         ConfigurationHandler configurationHandler = new ConfigurationHandler("data/linked-sign-stock.yml", this);
         for (Map.Entry<SignShopProperties, Integer> entry : linkedStock.entrySet()) {
             configurationHandler.getConfig().set(index + ".properties", entry.getKey());
